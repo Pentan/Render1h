@@ -1,6 +1,7 @@
 #ifndef R1H_VEC_H
 #define R1H_VEC_H
 
+#include <cstdio>
 #include <cmath>
 
 namespace r1h {
@@ -8,7 +9,21 @@ namespace r1h {
 struct Vec {
     double x_, y_, z_;
     
-    Vec(const double x=0.0, const double y=0.0, const double z=0.0): x_(x), y_(y), z_(z) {};
+    Vec(): x_(0.0), y_(0.0), z_(0.0) {};
+    Vec(const double x): x_(x), y_(x), z_(x) {};
+    Vec(const double x, const double y, const double z): x_(x), y_(y), z_(z) {};
+    
+    inline void print(const char *msg, const bool br=true) const {
+        printf("%s:(%lf,%lf,%lf)", msg, x_, y_, z_);
+        if(br) printf("\n");
+    }
+    
+    inline Vec operator+=(const Vec &b) {
+        x_ += b.x_;
+        y_ += b.y_;
+        z_ += b.z_;
+        return *this;
+    }
     
     inline Vec operator+(const Vec &b) const {
         return Vec(x_ + b.x_, y_ + b.y_, z_ + b.z_);

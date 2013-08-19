@@ -28,6 +28,16 @@ struct Object {
         geometry->retain();
     }
     
+    Material* getMaterialForId(const int matid) const {
+        if(!geometry) {
+            return 0;
+        }
+        if(matid < 0 || matid >= geometry->materials.size()) {
+            return 0;
+        }
+        return geometry->materials[matid];
+    }
+    
     /////
     //bool intersection(const Ray &ray, Hitpoint *hp) {}
 };

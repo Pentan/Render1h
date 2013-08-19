@@ -16,16 +16,19 @@ public:
     Vec side;
     
     // screensize of dir.length is 1.0
-    double focalWidth;
-    double focalHeight;
+    //double focalWidth;
+    //double focalHeight;
+    
+    double screenLeft;  // screen width of dir.length is 1.0
+    double aspectRatio;
     
     Camera() :
         pos(0.0, 0.0, 0.0),
         dir(0.0, 0.0, -1.0),
-        up(0.0, 1.0, 0.0)
-    {
-        setFieldOfView(1.778, 60.0);
-    }
+        up(0.0, 1.0, 0.0),
+        screenLeft(1.0),
+        aspectRatio(1.778)
+    {}
     
     void setLookat(const Vec &eye, const Vec &look, const Vec &nup) {
         pos = eye;
@@ -35,20 +38,22 @@ public:
         up = normalize(cross(dir, side));
     }
     
-    void setFocal(const double aspect, const double focalmm, const double sensorwidth=36.0) {
-        focalWidth = sensorwidth / focalmm;
-        focalHeight = sensorwidth / (focalmm * aspect);
+    // width / height
+    void setAspectRatio(const double aspect) {
+        aspectRatio = aspect;
     }
     
-    void setFieldOfView(const double aspect, const double vdegree) {
-        double t = tan(vdegree * M_PI / 180.0 * 0.5) * 2.0;
-        focalWidth = t;
-        focalHeight = t / aspect;
+    void setFocal(const double focalmm, const double sensorwidth=36.0) {
+        screenLeft = sensorwidth / focalmm;
+    }
+    
+    void setFieldOfView(const double vdegree) {
+        screenLeft = tan(vdegree * M_PI / 180.0 * 0.5) * 2.0;
     }
     
     Ray getCameraRay(const double tx, const double ty) {
-        Vec left = side * (focalWidth * (tx - 0.5));
-        Vec top = up * (focalHeight * (ty - 0.5) * -1.0);
+        Vec left = side * (screenLeft * (tx - 0.5));
+        Vec top = up * (screenLeft / aspectRatio * (ty - 0.5) * -1.0);
         return Ray(pos, normalize(dir + left + top));
     }
 };

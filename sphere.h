@@ -4,10 +4,9 @@
 #include "constants.h"
 #include "vec.h"
 #include "material.h"
+#include "eduptmaterial.h"
 #include "intersection.h"
-
 #include "geometry.h"
-#include "material.h"
 
 namespace r1h {
 
@@ -15,24 +14,16 @@ struct Sphere : public Geometry {
     double radius_;
     Vec position_;
     
-    //+++++
-    Color emission_;
-    Color color_;
-    ReflectionType reflection_type_;
-    //+++++
-    
     // edupt style constructor
     Sphere(
         const double radius, const Vec &position,
         const Color &emission, const Color &color,
         const ReflectionType reflection_type) :
-        Geometry(),
-        radius_(radius), position_(position), emission_(emission), color_(color), reflection_type_(reflection_type)
+        Geometry(), radius_(radius), position_(position)
     {
-        EduptMaterial *eduptmat = new EduptMaterial(color_, emission_, reflection_type_);
+        EduptMaterial *eduptmat = new EduptMaterial(color, emission, reflection_type);
         addMaterial(eduptmat);
         eduptmat->release();
-        
         //std::cout << "Sphere materials.size:" << materials.size() << ", [0]:" << eduptmat << std::endl;
     }
     
@@ -59,7 +50,7 @@ struct Sphere : public Geometry {
         
         hitpoint->position_ = ray.org_ + hitpoint->distance_ * ray.dir_;
         hitpoint->normal_ = normalize(hitpoint->position_ - position_);
-        hitpoint->material = materials[0];
+        hitpoint->materialId = 0;
         return true;
     }
 };

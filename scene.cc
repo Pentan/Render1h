@@ -1,53 +1,11 @@
 
-
+#include <cassert>
 #include "scene.h"
 
-using namespace r1h;
+#include "mesh.h"
+#include "eduptmaterial.h"
 
-void Scene::setupEduptScene(const double aspect) {
-    BackgroundColor = Color(0.0, 0.0, 0.0);
-    
-    objects.reserve(10);
-    
-    objects.push_back(new Object(
-        RCO::rc0(new Sphere(1e5, Vec( 1e5 + 1.0, 40.8, 81.6),    Color(), Color(0.75, 0.25, 0.25), REFLECTION_TYPE_DIFFUSE))
-    ));
-    objects.push_back(new Object(
-        RCO::rc0(new Sphere(1e5, Vec(-1e5 + 99.0, 40.8, 81.6),   Color(), Color(0.25, 0.25, 0.75), REFLECTION_TYPE_DIFFUSE))
-    ));
-    objects.push_back(new Object(
-        RCO::rc0(new Sphere(1e5, Vec(50.0, 40.8, 1e5),           Color(), Color(0.75, 0.75, 0.75), REFLECTION_TYPE_DIFFUSE))
-    ));
-    objects.push_back(new Object(
-        RCO::rc0(new Sphere(1e5, Vec(50.0, 40.8, 1e5 + 250.0),   Color(), Color(),                 REFLECTION_TYPE_DIFFUSE))
-    ));
-    objects.push_back(new Object(
-        RCO::rc0(new Sphere(1e5, Vec(50.0, 1e5, 81.6),           Color(), Color(0.75, 0.75, 0.75), REFLECTION_TYPE_DIFFUSE))
-    ));
-    objects.push_back(new Object(
-        RCO::rc0(new Sphere(1e5, Vec(50.0, 1e5 + 81.6, 81.6),    Color(), Color(0.75, 0.75, 0.75), REFLECTION_TYPE_DIFFUSE))
-    ));
-    objects.push_back(new Object(
-        RCO::rc0(new Sphere(20.0, Vec(65.0, 20.0, 20.0),         Color(), Color(0.25, 0.75, 0.25), REFLECTION_TYPE_DIFFUSE))
-    ));
-    objects.push_back(new Object(
-        RCO::rc0(new Sphere(16.5, Vec(27.0, 16.5, 47.0),         Color(), Color(0.99, 0.99, 0.99), REFLECTION_TYPE_SPECULAR))
-    ));
-    objects.push_back(new Object(
-        RCO::rc0(new Sphere(16.5, Vec(77.0, 16.5, 78.0),         Color(), Color(0.99, 0.99, 0.99), REFLECTION_TYPE_REFRACTION))
-    ));
-    objects.push_back(new Object(
-        RCO::rc0(new Sphere(15.0, Vec(50.0, 90.0, 81.6),         Color(36.0, 36.0, 36.0), Color(), REFLECTION_TYPE_DIFFUSE))
-    ));
-    
-    camera = RCO::rc0<Camera>(new Camera());
-    camera->setLookat(
-        Vec(50.0, 52.0, 220.0),
-        Vec(50.0, 52.0 - 0.04, 220.0 - 1.0),
-        Vec(0.0, 1.0, 0.0)
-    );
-    camera->setFocal(aspect, 40.0, 30.0 * aspect);
-}
+using namespace r1h;
 
 inline bool Scene::intersect_scene(const Ray &ray, Intersection *intersection) {
     intersection->hitpoint_.distance_ = kINF;
@@ -67,6 +25,8 @@ inline bool Scene::intersect_scene(const Ray &ray, Intersection *intersection) {
     return (intersection->object_id_ != -1);
 }
 
+#if 0
+// original recursive routine
 // from radiance.h
 Color Scene::radiance(const Ray &ray, Random *rnd, const int depth) {
     Intersection intersection;
@@ -75,20 +35,22 @@ Color Scene::radiance(const Ray &ray, Random *rnd, const int depth) {
         return BackgroundColor;
     }
     
-    //const Object *now_object = objects[intersection.object_id_];
+    const Object *now_object = objects[intersection.object_id_];
     const Hitpoint &hitpoint = intersection.hitpoint_;
     const Vec orienting_normal = (dot(hitpoint.normal_, ray.dir_) < 0.0)? hitpoint.normal_ : (-1.0 * hitpoint.normal_);
     
     //assert(hitpoint.material!=NULL);
     
-    Material *now_mat = hitpoint.material;
-    Material::Coord dummyco;
-    const Color now_color = now_mat->albedo(dummyco);
-    const Color now_emission = now_mat->emission(dummyco);
-    const ReflectionType now_reftype = now_mat->reflectionType(dummyco);
+    Material *now_mat = now_object->getMaterialForId(hitpoint.materialId);
+    assert(now_mat);
+    
+    const Color now_color = now_mat->albedo(hitpoint);
+    const Color now_emission = now_mat->emission(hitpoint);
+    const ReflectionType now_reftype = now_mat->reflectionType(hitpoint);
     
     //+++++
-    return now_emission + now_color;
+    //return now_emission + now_color;
+    //return hitpoint.normal_ * 0.5 + Vec(0.5, 0.5, 0.5);
     //+++++
     
     // max color component for russian roulette.
@@ -196,3 +158,94 @@ Color Scene::radiance(const Ray &ray, Random *rnd, const int depth) {
     //return Color(rand->next01(), rand->next01(), rand->next01());
     //return Color(1.0, 0.5, 0.0);
 }
+
+//+++++
+#else
+// my loop routine
+// from radiance.h
+Color Scene::radiance(const Ray &ray, Random *rnd, const int firstdepth) {
+    // いろいろ用意
+    std::vector<TraceInfo> rays1, rays2, tmprays;
+    rays1.reserve(128);
+    rays2.reserve(128);
+    tmprays.reserve(4);
+    std::vector<TraceInfo> *currays, *nextrays, *tmpraysptr;
+    currays = &rays1;
+    nextrays = &rays2;
+    
+    // ラディアンスを初期化
+    Color radiance_color = Color(0.0);
+    // 最初のレイ
+    currays->push_back(TraceInfo(ray, Color(1.0)));
+    
+    // 追跡すべきレイがある限り
+    int depth = firstdepth;
+    while(currays->size() > 0) {
+        // 次のレイのコンテナを初期化
+        nextrays->clear();
+        // 追跡
+        for(int i = 0; i < currays->size(); i++) {
+            const TraceInfo &tracer = currays->at(i);
+            
+            Intersection intersection;
+            
+            // 交差しなければ背景色
+            if(!intersect_scene(tracer.ray, &intersection)) {
+                radiance_color += multiply(BackgroundColor, tracer.weight);
+                continue;
+            }
+            
+            // 当たったオブジェクト
+            const Object *now_object = objects[intersection.object_id_];
+            const Hitpoint &hitpoint = intersection.hitpoint_;
+            
+            // 当たった先の表面情報から
+            Material *now_mat = now_object->getMaterialForId(hitpoint.materialId);
+            assert(now_mat);
+            const Color now_color = now_mat->albedo(hitpoint);
+            const Color now_emission = now_mat->emission(hitpoint);
+            
+            // 放射に重みをかけて足す
+            radiance_color += multiply(now_emission, tracer.weight);
+            
+            // ロシアンルーレット
+            double russian_roulette_probability = std::max(now_color.x_, std::max(now_color.y_, now_color.z_));
+            // avoid stack overflow
+            if(depth > DepthLimit) {
+                russian_roulette_probability *= pow(0.5, depth - DepthLimit);
+            }
+            // if depth is larger than minimum depth, do roussian roulette.
+            if(depth > Depth) {
+                if(rnd->next01() >= russian_roulette_probability) {
+                    continue;
+                }
+            } else {
+                russian_roulette_probability = 1.0;
+            }
+            
+            // 次のレイのための重みを計算
+            const Color nextweight = now_color / russian_roulette_probability;
+            
+            // 次に追跡すべきレイを取得
+            tmprays.clear();
+            now_mat->calcNextRays(tracer.ray, hitpoint, depth, rnd, tmprays);
+            // 現在の重みを考慮しつつ次のリストへ追加
+            for(int j = 0; j < tmprays.size(); j++) {
+                TraceInfo jnext = tmprays[j];
+                jnext.weight = multiply(jnext.weight, multiply(tracer.weight, nextweight));
+                nextrays->push_back(jnext);
+            }
+        }
+        // コンテナを入れ替えて次へ
+        tmpraysptr = currays;
+        currays = nextrays;
+        nextrays = tmpraysptr;
+        ++depth;
+    }
+    
+    return radiance_color;
+}
+#endif
+//+++++
+
+
