@@ -17,6 +17,7 @@
 #include "aabb.h"
 
 #include "testscene.h"
+#include "mainscene.h"
 
 #include <sys/time.h>
 static double gettimeofday_sec() {
@@ -35,20 +36,20 @@ int main(int argc, char *argv[]) {
     
     const int w = 640;
     const int h = 480;
-    const int samples = 2;
+    const int samples = 1;
     const int ss = 4;
+    /*
+    const int w = 160;
+    const int h = 120;
+    const int samples = 2;
+    const int ss = 2;
+    */
     
     Scene scene;
+    setupMainScene(scene);
     
-    //+++++
-    // scene setup
-    //setupEduptScene(scene, double(w) / h);
-    //setupTestObjScene(scene, double(w) / h);
-    //setupCornelBoxObjScene(scene, double(w) / h);
-    //setupAABBTestScene(scene, double(w) / h);
-    setupManyTrisObjScene(scene, double(w) / h);
-    //return 0;
-    //+++++
+    Camera *cam = scene.camera;
+    cam->setAspectRatio(double(w) / h);
     
     Renderer rndr(w, h);
     rndr.init();
@@ -57,7 +58,7 @@ int main(int argc, char *argv[]) {
     int exportCount = 0;
     char namebuf[128];
     
-    const time_t RenderStopTime = 10 * 60; //55 * 60; //[sec]
+    const time_t RenderStopTime = 3 * 60; //55 * 60; //[sec]
     time_t startTime = time(0);
     time_t elapsedTime = 0;
     
@@ -67,8 +68,8 @@ int main(int argc, char *argv[]) {
         rndr.resumeRender(scene, samples, ss);
         
         //+++++
-        std::cout << "sleep 5 sec" << std::endl;
-        usleep(5 * 1000000);
+        //std::cout << "sleep 5 sec" << std::endl;
+        //usleep(5 * 1000000);
         //+++++
         
         elapsedTime = time(0) - startTime;

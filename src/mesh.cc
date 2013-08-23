@@ -47,7 +47,7 @@ void Mesh::buildBVH() {
     }
     
     int facenum = faces.size();
-    std::cout  << "faces:" << facenum << std::endl;
+    //std::cout  << "faces:" << facenum << std::endl;
     
     AABB *faceAABBs = new AABB[facenum];
     for(int i = 0; i < facenum; i++) {
@@ -62,7 +62,7 @@ void Mesh::buildBVH() {
     //int maxdepth = recurseBuildBVH(*bvhRoot, faceAABBs, facenum);
     int maxdepth = bvhRoot->buildAABBTree(faceAABBs, facenum);
     
-    std::cout << "max BVH depth:" << maxdepth << std::endl;
+    //std::cout << "max BVH depth:" << maxdepth << std::endl;
     
     delete [] faceAABBs;
 }
@@ -189,6 +189,7 @@ bool Mesh::intersect(const Ray &ray, Hitpoint *hitpoint) const {
     // TODO: attributes
     //hitpoint->material = (hitface.matid < 0)? 0 : materials[hitface.matid];
     hitpoint->materialId = hitface.matid;
+    hitpoint->faceId = nearest_info.faceid;
     hitpoint->varyingWeight = Vec(nearest_info.w0, nearest_info.w1, nearest_info.w2);
     
     return true;

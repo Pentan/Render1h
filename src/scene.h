@@ -9,6 +9,7 @@
 #include "sphere.h"
 #include "intersection.h"
 #include "material.h"
+#include "background.h"
 #include "geometry.h"
 #include "object.h"
 #include "camera.h"
@@ -26,10 +27,10 @@ public:
     Camera *camera;
     std::vector<Object*> objects;
     
-    Color BackgroundColor;
+    BackgroundMaterial *background;
     
-    
-    Scene() : camera(0), BackgroundColor(0.0, 0.0, 0.0) {}
+    /////
+    Scene() : camera(0), background(0) {}
     
     ~Scene() {
         if(camera) {
@@ -51,6 +52,14 @@ public:
         }
         camera = cam;
         camera->retain();
+    }
+    
+    void setBackgroundMaterial(BackgroundMaterial *bg) {
+        if(background) {
+            background->release();
+        }
+        background = bg;
+        background->retain();
     }
     
     inline bool intersect_scene(const Ray &ray, Intersection *intersection);

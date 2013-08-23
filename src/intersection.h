@@ -14,6 +14,7 @@ struct Hitpoint {
     Vec position_;
     
     int materialId;
+    int faceId;
     Vec varyingWeight;
     
     

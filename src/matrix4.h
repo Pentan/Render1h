@@ -19,16 +19,6 @@ template<typename FPType> union Matrix4 {
     };
     FPType m[16];
     
-    /////
-    static inline Matrix4 identity() {
-        return Matrix4(
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
-            0.0, 0.0, 0.0, 1.0
-        );
-    }
-    
     // utilities
     static inline void sprint(char *buf, const Matrix4 &m, const bool isbr) {
         if(isbr) {
@@ -49,11 +39,12 @@ template<typename FPType> union Matrix4 {
     }
     
     // constructors
+    // default constructor makes identity.
     Matrix4():
-        m00(0.0), m01(0.0), m02(0.0), m03(0.0),
-        m10(0.0), m11(0.0), m12(0.0), m13(0.0),
-        m20(0.0), m21(0.0), m22(0.0), m23(0.0),
-        m30(0.0), m31(0.0), m32(0.0), m33(0.0)
+        m00(1.0), m01(0.0), m02(0.0), m03(0.0),
+        m10(0.0), m11(1.0), m12(0.0), m13(0.0),
+        m20(0.0), m21(0.0), m22(1.0), m23(0.0),
+        m30(0.0), m31(0.0), m32(0.0), m33(1.0)
     {}
     Matrix4(
         const FPType im00, const FPType im01, const FPType im02, const FPType im03,
@@ -123,9 +114,26 @@ template<typename FPType> union Matrix4 {
         m32 = r2.w;
         m33 = r3.w;
     }
-    
+    inline void setIdentity() {
+        m00 = 1.0;
+        m01 = 0.0;
+        m02 = 0.0;
+        m03 = 0.0;
+        m10 = 0.0;
+        m11 = 1.0;
+        m12 = 0.0;
+        m13 = 0.0;
+        m20 = 0.0;
+        m21 = 0.0;
+        m22 = 1.0;
+        m23 = 0.0;
+        m30 = 0.0;
+        m31 = 0.0;
+        m32 = 0.0;
+        m33 = 1.0;
+    }
     inline void setTranslation(const FPType tx, const FPType ty, const FPType tz) {
-        *this = Matrix4::identity();
+        setIdentity();
         m30 = tx;
         m31 = ty;
         m32 = tz;
@@ -154,7 +162,7 @@ template<typename FPType> union Matrix4 {
         m33 = 1.0;
     }
     inline void setScale(const FPType sx, const FPType sy, const FPType sz) {
-        *this = Matrix4::identity();
+        setIdentity();
         m00 = sx;
         m11 = sy;
         m22 = sz;
@@ -439,60 +447,58 @@ template<typename FPType> union Matrix4 {
         }
         return tmpm;
     }
-    static inline Matrix4 translated(const Matrix4 m, const FPType tx, const FPType ty, const FPType tz) {
+    static inline Matrix4 translated(const Matrix4 &m, const FPType tx, const FPType ty, const FPType tz) {
         Matrix4 tmpm = m;
         tmpm.translate(tx, ty, tz);
         return tmpm;
     }
-    static inline Matrix4 translated(const Matrix4 m, const Vector3<FPType> &transv) {
+    static inline Matrix4 translated(const Matrix4 &m, const Vector3<FPType> &transv) {
         Matrix4 tmpm = m;
         tmpm.translate(transv);
         return tmpm;
     }
-    static inline Matrix4 rotated(const Matrix4 m, const FPType rad, const FPType ax, const FPType ay, const FPType az) {
+    static inline Matrix4 rotated(const Matrix4 &m, const FPType rad, const FPType ax, const FPType ay, const FPType az) {
         Matrix4 tmpm = m;
         tmpm.rotate(rad, ax, ay, az);
         return tmpm;
     }
-    static inline Matrix4 rotated(const Matrix4 m, const FPType rad, const Vector3<FPType> axisv) {
+    static inline Matrix4 rotated(const Matrix4 &m, const FPType rad, const Vector3<FPType> axisv) {
         Matrix4 tmpm = m;
         tmpm.rotate(rad, axisv);
         return tmpm;
     }
-    static inline Matrix4 scaled(const Matrix4 m, const FPType sx, const FPType sy, const FPType sz) {
+    static inline Matrix4 scaled(const Matrix4 &m, const FPType sx, const FPType sy, const FPType sz) {
         Matrix4 tmpm = m;
         tmpm.scale(sx, sy, sz);
         return tmpm;
     }
-    static inline Matrix4 scaled(const Matrix4 m, const Vector3<FPType> scalev) {
+    static inline Matrix4 scaled(const Matrix4 &m, const Vector3<FPType> &scalev) {
         Matrix4 tmpm = m;
         tmpm.scale(scalev);
         return tmpm;
     }
 
     // vs vectors
-    static inline Vector3<FPType> mulV3(const Matrix4 ml, const Vector3<FPType> vr) {
-        Vector3<FPType> retv;
-        retv.x = ml.m00 * vr.x + ml.m10 * vr.y + ml.m20 * vr.z;
-        retv.y = ml.m01 * vr.x + ml.m11 * vr.y + ml.m21 * vr.z;
-        retv.z = ml.m02 * vr.x + ml.m12 * vr.y + ml.m22 * vr.z;
-        return retv;
+    static inline Vector3<FPType> mulV3(const Matrix4 &ml, const Vector3<FPType> &vr) {
+        // multiply upper 3x3 matrix
+        FPType vx = ml.m00 * vr.x + ml.m10 * vr.y + ml.m20 * vr.z;
+        FPType vy = ml.m01 * vr.x + ml.m11 * vr.y + ml.m21 * vr.z;
+        FPType vz = ml.m02 * vr.x + ml.m12 * vr.y + ml.m22 * vr.z;
+        return Vector3<FPType>(vx, vy, vz);;
     }
-    static inline Vector3<FPType> mulV3WithTrans(const Matrix4 ml, const Vector3<FPType> vr) {
-        Vector3<FPType> retv;
-        retv.x = ml.m00 * vr.x + ml.m10 * vr.y + ml.m20 * vr.z + ml.m30;
-        retv.y = ml.m01 * vr.x + ml.m11 * vr.y + ml.m21 * vr.z + ml.m31;
-        retv.z = ml.m02 * vr.x + ml.m12 * vr.y + ml.m22 * vr.z + ml.m32;
-        return retv;
+    static inline Vector3<FPType> transformV3(const Matrix4 &ml, const Vector3<FPType> &vr) {
+        FPType vx = ml.m00 * vr.x + ml.m10 * vr.y + ml.m20 * vr.z + ml.m30;
+        FPType vy = ml.m01 * vr.x + ml.m11 * vr.y + ml.m21 * vr.z + ml.m31;
+        FPType vz = ml.m02 * vr.x + ml.m12 * vr.y + ml.m22 * vr.z + ml.m32;
+        return Vector3<FPType>(vx, vy, vz);
     }
     
     static inline Vector4<FPType> mulV4(const Matrix4 &ml, const Vector4<FPType> &vr) {
-        Vector4<FPType> retv;
-        retv.x = ml.m00 * vr.x + ml.m10 * vr.y + ml.m20 * vr.z + ml.m30 * vr.w;
-        retv.y = ml.m01 * vr.x + ml.m11 * vr.y + ml.m21 * vr.z + ml.m31 * vr.w;
-        retv.z = ml.m02 * vr.x + ml.m12 * vr.y + ml.m22 * vr.z + ml.m32 * vr.w;
-        retv.w = ml.m03 * vr.x + ml.m13 * vr.y + ml.m23 * vr.z + ml.m33 * vr.w;
-        return retv;
+        FPType vx = ml.m00 * vr.x + ml.m10 * vr.y + ml.m20 * vr.z + ml.m30 * vr.w;
+        FPType vy = ml.m01 * vr.x + ml.m11 * vr.y + ml.m21 * vr.z + ml.m31 * vr.w;
+        FPType vz = ml.m02 * vr.x + ml.m12 * vr.y + ml.m22 * vr.z + ml.m32 * vr.w;
+        FPType vw = ml.m03 * vr.x + ml.m13 * vr.y + ml.m23 * vr.z + ml.m33 * vr.w;
+        return Vector4<FPType>(vx, vy, vz, vw);
     }
 
     static inline Vector3<FPType> mulAndProjectV3(const Matrix4 ml, const Vector3<FPType> vr) {

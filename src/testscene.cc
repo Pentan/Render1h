@@ -251,7 +251,7 @@ using namespace r1h;
 
 void r1h::setupCornelBoxObjScene(Scene &scene, const double aspect) {
     TestObjImport importer(&scene, "cornelbox.obj");
-    importer.setBasePath("model");
+    importer.setBasePath("../bin/model");
     importer.load();
     
     // camera for cornel box
@@ -273,7 +273,7 @@ void r1h::setupTestObjScene(Scene &scene, const double aspect) {
     //TestObjImport importer(&scene, "testobj.obj");
     TestObjImport importer(&scene, "testobj2.obj");
     //TestObjImport importer(&scene, "monky3.obj");
-    importer.setBasePath("model");
+    importer.setBasePath("../bin/model");
     importer.load();
     
     scene.BackgroundColor = Color(1.0 ,1.0, 1.0);
@@ -365,7 +365,7 @@ void r1h::setupManyTrisObjScene(Scene &scene, const double aspect) {
     //TestObjImport importer(&scene, "manypoly0.obj"); // low
     //TestObjImport importer(&scene, "manypoly1.obj"); // high
     TestObjImport importer(&scene, "suzanne2.obj"); // higher
-    importer.setBasePath("model");
+    importer.setBasePath("../bin/model");
     importer.load();
     
     // camera for cornel box

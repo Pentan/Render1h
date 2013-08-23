@@ -22,22 +22,22 @@ OBJS = \
 	sphere.o \
 	aabbgeometry.o \
 	bvhnode.o \
-	testscene.o \
+	texture.o \
 	wavefrontobj.o
 
-TESTOBJ = testmain.o
-MAINOBJ = maincui.o
+TESTOBJ = testmain.o testscene.o
+MAINOBJ = maincui.o mainscene.o
 
-TESTTARGET = r1h01
 MAINTARGET = raynbowd
-
-# test
-$(TESTTARGET) : $(TESTOBJ) $(OBJS)
-	$(CC) -o $(TESTTARGET) $(TESTOBJ) $(OBJS) $(LDFLAGS)
+TESTTARGET = r1h01
 
 # main
 $(MAINTARGET) : $(MAINOBJ) $(OBJS)
 	$(CC) -o $(MAINTARGET) $(MAINOBJ) $(OBJS) $(LDFLAGS)
+
+# test
+$(TESTTARGET) : $(TESTOBJ) $(OBJS)
+	$(CC) -o $(TESTTARGET) $(TESTOBJ) $(OBJS) $(LDFLAGS)
 
 clean :
 	rm -f $(OBJS) $(TESTOBJ) $(MAINOBJ) $(TARGET)

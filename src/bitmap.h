@@ -2,7 +2,8 @@
 #define R1H_BITMAP_H
 
 #include <fstream>
-#include "material.h"
+//#include "material.h"
+#include "color.h"
 
 namespace r1h {
 
@@ -12,8 +13,8 @@ inline double clamp(double x) {
     return x;
 }
 
-inline int to_int(double x) {
-    return int(pow(clamp(x), 1.0/2.2) * 255 + 0.5);
+inline int to_int(double x, double gamma) {
+    return int(pow(clamp(x), 1.0/gamma) * 255 + 0.5);
 }
 
 inline void put16(const unsigned short s, std::ofstream &ofs) {
@@ -28,7 +29,7 @@ inline void put32(const unsigned long l, std::ofstream &ofs) {
     ofs.put((l >> 24) & 0xff);
 }
 
-void save_bmp_file(const std::string &filename, const Color *image, const int width, const int height) {
+void save_bmp_file(const std::string &filename, const Color *image, const int width, const int height, const double gamma=2.2) {
     std::ofstream ofs(filename.c_str(), std::ios::out | std::ios::binary);
     
     // header
@@ -67,9 +68,9 @@ void save_bmp_file(const std::string &filename, const Color *image, const int wi
     for(int y = height - 1; y >= 0; y--) {
         for(int x = 0; x < width; x++) {
             const Color &c = image[y * width + x];
-            ofs.put(to_int(c.z_));
-            ofs.put(to_int(c.y_));
-            ofs.put(to_int(c.x_));
+            ofs.put(to_int(c.z_, gamma));
+            ofs.put(to_int(c.y_, gamma));
+            ofs.put(to_int(c.x_, gamma));
         }
     }
     

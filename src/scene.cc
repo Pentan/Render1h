@@ -65,7 +65,8 @@ Color Scene::radiance(const Ray &ray, RenderContext *rndrcntx, const int firstde
             
             // Œð·‚µ‚È‚¯‚ê‚Î”wŒiF
             if(!intersect_scene(tracer.ray, &intersection)) {
-                radiance_color += Color::mul(BackgroundColor, tracer.weight);
+                Color bgcol = (background)? background->backgroundColor(tracer.ray) : Color(0.0);
+                radiance_color += Color::mul(bgcol, tracer.weight);
                 continue;
             }
             

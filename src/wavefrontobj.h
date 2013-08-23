@@ -13,33 +13,55 @@ class WavefrontObj {
 public:
     enum ParameterType {
         // obj
-        OBJ_unknown,
-        OBJ_v   = 128,
-        OBJ_vn,
-        OBJ_vt,
-        OBJ_o,
-        OBJ_g,
-        OBJ_s,
-        OBJ_f,
-        OBJ_mtllib,
-        OBJ_usemtl,
+        OBJ_unknown = 0,
+        OBJ_v       = 'v',
+        OBJ_vn      = 'vn',
+        OBJ_vt      = 'vt',
+        OBJ_o       = 'o',
+        OBJ_g       = 'g',
+        OBJ_s       = 's',
+        OBJ_f       = 'f',
+        OBJ_mtllib  = 'mlib',
+        OBJ_usemtl  = 'usem',
         // matl
-        MTL_newmtl,
-        MTL_Ns,
-        MTL_Ka,
-        MTL_Kd,
-        MTL_Ks,
-        MTL_Ni,
-        MTL_d,
-        MTL_illum,
-        MTL_map_Kd
+        MTL_newmtl  = 'newm',
+        MTL_Ns      = 'Ns',
+        MTL_Ka      = 'Ka',
+        MTL_Kd      = 'Kd',
+        MTL_Ks      = 'Ks',
+        MTL_Ni      = 'Ni',
+        MTL_d       = 'd',
+        MTL_illum   = 'ilm',
+        MTL_map_Kd  = 'mpKd'
     };
     
+    enum ValueType {
+        kNoneValue,
+        kVectorValue,
+        kStringValue,
+        kFaceValue,
+        kIntegerValue
+    };
+    
+    struct ParameterDesc {
+        ParameterType paramType;
+        ValueType valueType;
+        ParameterDesc(): paramType(OBJ_unknown), valueType(kNoneValue) {};
+        ParameterDesc(const ParameterType pt, const ValueType vt): paramType(pt), valueType(vt) {};
+    };
+    
+    
+private:
+    std::map<std::string, ParameterDesc> ptMap;
+    void loadFile(const char *fpath);
+    
+public:
+    ////
     struct FaceInfo {
         int v, vt, vn;
     };
     
-    WavefrontObj(const char *path): filepath(path) {}
+    WavefrontObj(const char *path);
     virtual ~WavefrontObj(){}
     
     virtual void setBasePath(const char *path) {
@@ -66,9 +88,10 @@ public:
     // endof .mtl or .obj
     virtual void endFile() = 0;
     
-private:
-    std::map<std::string, ParameterType> ptMap;
-    void loadFile(const char *fpath);
+    void addParameterDesc(const std::string &key, const ParameterDesc &desc) {
+        ptMap[key] = desc;
+    }
 };
+
 }
 #endif
