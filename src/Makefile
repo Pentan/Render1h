@@ -1,5 +1,5 @@
 
-# FULL_OPTIMIZE = 1
+FULL_OPTIMIZE = 1
 
 ifdef FULL_OPTIMIZE
     CC = gcc
@@ -28,7 +28,7 @@ OBJS = \
 TESTOBJ = testmain.o testscene.o
 MAINOBJ = maincui.o mainscene.o
 
-MAINTARGET = raynbowd
+MAINTARGET = r1hfnl
 TESTTARGET = r1h01
 
 # main

@@ -1,4 +1,4 @@
 Render1h
 ========
 
-A renderer for https://sites.google.com/site/rendering1h/ is approaching fast!
+A something that want to be a renderer for https://sites.google.com/site/rendering1h/
