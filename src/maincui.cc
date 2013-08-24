@@ -34,19 +34,21 @@ int main(int argc, char *argv[]) {
     
     double startSec = gettimeofday_sec();
     
+    /*
     const int w = 640;
     const int h = 480;
     const int samples = 1;
     const int ss = 4;
-    /*
-    const int w = 160;
-    const int h = 120;
-    const int samples = 2;
-    const int ss = 2;
     */
+    const int w = 640;
+    const int h = 360;
+    const int samples = 1;
+    const int ss = 4;
+    
     
     Scene scene;
     setupMainScene(scene);
+    scene.prepareRender();
     
     Camera *cam = scene.camera;
     cam->setAspectRatio(double(w) / h);
@@ -58,7 +60,7 @@ int main(int argc, char *argv[]) {
     int exportCount = 0;
     char namebuf[128];
     
-    const time_t RenderStopTime = 3 * 60; //55 * 60; //[sec]
+    const time_t RenderStopTime = 5 * 60; //55 * 60; //[sec]
     time_t startTime = time(0);
     time_t elapsedTime = 0;
     

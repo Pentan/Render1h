@@ -15,6 +15,7 @@
 #include "camera.h"
 #include "random.h"
 #include "render.h"
+#include "bvhnode.h"
 
 namespace r1h {
 
@@ -26,11 +27,12 @@ public:
     
     Camera *camera;
     std::vector<Object*> objects;
+    BVHNode *objectsBVH;
     
     BackgroundMaterial *background;
     
     /////
-    Scene() : camera(0), background(0) {}
+    Scene() : camera(0), objectsBVH(0), background(0) {}
     
     ~Scene() {
         if(camera) {
@@ -38,6 +40,9 @@ public:
         }
         for(unsigned int i = 0; i < objects.size(); i++) {
             delete objects[i];
+        }
+        if(objectsBVH) {
+            delete objectsBVH;
         }
     }
     
@@ -62,8 +67,13 @@ public:
         background->retain();
     }
     
-    inline bool intersect_scene(const Ray &ray, Intersection *intersection);
+    void prepareRender();
+    
+    bool intersect_scene(const Ray &ray, Intersection *intersection);
     Color radiance(const Ray &ray, RenderContext *rndrcntx, const int firstdepth);
+    
+private:
+    bool intersectBVHNode(const BVHNode &node, const Ray &ray, Intersection *intersection);
 };
 
 }

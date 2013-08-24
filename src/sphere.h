@@ -35,6 +35,12 @@ struct Sphere : public Geometry {
         //printf("Sphere %p destructed\n", this);
     }
     
+    AABB getAABB() const {
+        Vec minv = position_ - Vec(radius_);
+        Vec maxv = position_ + Vec(radius_);
+        return AABB(minv, maxv);
+    }
+    
     bool intersect(const Ray &ray, Hitpoint *hitpoint) const {
         const Vec p_o = position_ - ray.org_;
         const double b = Vec::dot(p_o, ray.dir_);

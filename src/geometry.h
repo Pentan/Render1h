@@ -6,6 +6,7 @@
 #include "material.h"
 #include "ray.h"
 #include "intersection.h"
+#include "aabb.h"
 
 namespace r1h {
 
@@ -23,12 +24,13 @@ struct Geometry : public RCO {
         //std::cout << "Geometry destructed" << std::endl;
     }
     
-    
     int addMaterial(Material *mat) {
         materials.push_back(mat);
         mat->retain();
         return materials.size() - 1;
     }
+    
+    virtual AABB getAABB() const { return AABB(); }
     virtual bool intersect(const Ray &ray, Hitpoint *hitpoint) const { return false; }
 };
 

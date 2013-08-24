@@ -16,6 +16,8 @@ struct AABBGeometry : public Geometry {
     
     AABBGeometry(const Vec min, const Vec max): Geometry(kTypeID), aabb(min, max) {}
     
+    AABB getAABB() const { return aabb; }
+    
     bool intersect(const Ray &ray, Hitpoint *hitpoint) const {
         double t;
         int axis;

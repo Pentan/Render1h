@@ -7,11 +7,29 @@
 
 using namespace r1h;
 
-inline bool Scene::intersect_scene(const Ray &ray, Intersection *intersection) {
+void Scene::prepareRender() {
+    if(objectsBVH) {
+        delete objectsBVH;
+    }
+    
+    int objnum = objects.size();
+    AABB *aabbArray = new AABB[objnum];
+    for(int i = 0; i < objnum; i++) {
+        aabbArray[i] = objects[i]->geometry->getAABB();
+        aabbArray[i].dataId = i;
+    }
+    objectsBVH = new BVHNode();
+    int maxdepth = objectsBVH->buildAABBTree(aabbArray, objnum);
+    delete [] aabbArray;
+    //std::cout << "objects:" << objnum << ", BVH depth:" << maxdepth << std::endl;
+}
+
+bool Scene::intersect_scene(const Ray &ray, Intersection *intersection) {
     intersection->hitpoint_.distance_ = kINF;
     intersection->object_id_ = -1;
     
-    // オブジェクト総当たり
+#if 1
+    // とりあえずオブジェクト総当たり
     for(unsigned int i = 0; i < objects.size(); i++) {
         Hitpoint hitpoint;
         if(objects[i]->geometry->intersect(ray, &hitpoint)) {
@@ -21,8 +39,47 @@ inline bool Scene::intersect_scene(const Ray &ray, Intersection *intersection) {
             }
         }
     }
+#else
+    // BVHバージョン(TODO
+    intersectBVHNode(*objectsBVH, ray, intersection);
+#endif
     
     return (intersection->object_id_ != -1);
+}
+
+bool Scene::intersectBVHNode(const BVHNode &node, const Ray &ray, Intersection *intersection) {
+    if(node.isLeaf()) {
+        //葉
+        Hitpoint hitpoint;
+        if(objects[node.dataId]->geometry->intersect(ray, &hitpoint)) {
+            if(hitpoint.distance_ < intersection->hitpoint_.distance_) {
+                intersection->hitpoint_ = hitpoint;
+                intersection->object_id_ = node.dataId;
+            }
+        }
+    } else {
+        double d;
+        if(node.aabb.isIntersect(ray, &d)) { // レイが自分のAABBにヒットしている
+            if(d < intersection->hitpoint_.distance_) { // より近くで
+                Intersection nearestisect = *intersection;
+                Intersection tmpisect = *intersection;
+                for(int i = 0; i < node.childNum; i++) {
+                    // 子ノードをチェック
+                    if(intersectBVHNode(node.children[i], ray, &tmpisect)) {
+                        if(tmpisect.hitpoint_.distance_ < nearestisect.hitpoint_.distance_) {
+                            nearestisect = tmpisect;
+                        }
+                    }
+                }
+                // 今のヒット位置よりも近かったら採用
+                if(nearestisect.hitpoint_.distance_ < intersection->hitpoint_.distance_) {
+                    *intersection = nearestisect;
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 Color Scene::radiance(const Ray &ray, RenderContext *rndrcntx, const int firstdepth) {

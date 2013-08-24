@@ -11,6 +11,7 @@
 #include "wavefrontobj.h"
 #include "bsdf.h"
 #include "diffusebsdf.h"
+#include "specularbsdf.h"
 #include "aabbgeometry.h"
 #include "background.h"
 #include "texture.h"
@@ -20,77 +21,181 @@
 /////
 namespace r1h {
 
-class MainCubeMaterial : public Material {
+class AccentGrayMaterial : public Material {
 public:
     BSDF *bsdf;
     VoronoiTexture *voronoi;
     
-    MainCubeMaterial() : bsdf(0) {
+    AccentGrayMaterial() : bsdf(0), voronoi(0) {
         bsdf = new DiffuseBSDF();
-        voronoi = new VoronoiTexture(0.8, time(NULL));
+        voronoi = new VoronoiTexture(0.8);
         voronoi->setTransform(Mat4::makeScale(10.0, 10.0, 10.0));
     }
-    ~MainCubeMaterial() {
+    ~AccentGrayMaterial() {
         delete bsdf;
         delete voronoi;
     }
     
     Color albedo(const Object &obj, const Hitpoint &hp) const {
-        double d = 1.0;
-        if(obj.geometry->typeID == Mesh::kTypeID) {
-            Mesh *mesh = dynamic_cast<Mesh*>(obj.geometry);
-            Vec vuv = mesh->getVaryingAttr(hp.faceId, 0, hp.varyingWeight);
-            d = vuv.x_;
-        }
-        return Color(0.8, 0.6, 0.4) * (d * 0.5 + 0.5);
+        return Color(0.106, 0.106, 0.106) * 0.8;
     }
     Color emission(const Object &obj, const Hitpoint &hp) const {
-        
-        Color voro = voronoi->sample(hp.position_);
-        double vo = voro.x_ * voro.x_;
-        return Color(0.0, 0.0, 0.0) * vo;
+        return Color(0.0, 0.0, 0.0);
     }
     void calcNextRays(const Ray &ray, const Hitpoint &hp, const int depth, Random *rnd, std::vector<TraceInfo> &outvecs) {
         bsdf->getNextRays(ray, hp, depth, rnd, outvecs);
     }
 };
 
-class MainPlaneMaterial : public Material {
+//
+class BodyWhiteMaterial : public Material {
 public:
     BSDF *bsdf;
-    VoronoiTexture *voronoi;
     
-    MainPlaneMaterial(): bsdf(0) {
+    BodyWhiteMaterial() : bsdf(0) {
         bsdf = new DiffuseBSDF();
-        voronoi = new VoronoiTexture(0.9, time(NULL));
-        voronoi->setTransform(Mat4::makeScale(4.0, 4.0, 4.0));
     }
-    ~MainPlaneMaterial() {
+    ~BodyWhiteMaterial() {
         delete bsdf;
-        delete voronoi;
     }
     
     Color albedo(const Object &obj, const Hitpoint &hp) const {
-        return Color(0.1, 0.3, 0.0);
+        return Color(0.68);
     }
     Color emission(const Object &obj, const Hitpoint &hp) const {
-        Color voro = voronoi->sample(hp.position_);
-        return (voro.x_ > 0.7)? Color(2.0, 1.0, 0.5) : Color(0.0, 0.0, 0.0);
+        return Color(0.0, 0.0, 0.0);
     }
     void calcNextRays(const Ray &ray, const Hitpoint &hp, const int depth, Random *rnd, std::vector<TraceInfo> &outvecs) {
         bsdf->getNextRays(ray, hp, depth, rnd, outvecs);
     }
 };
 
-class MainModelLoader : public WavefrontObj {
+//
+class EyeColorMaterial : public Material {
+public:
+    BSDF *bsdf;
     
+    EyeColorMaterial() : bsdf(0) {
+        bsdf = new DiffuseBSDF();
+    }
+    ~EyeColorMaterial() {
+        delete bsdf;
+    }
+    
+    Color albedo(const Object &obj, const Hitpoint &hp) const {
+        return Color(0.128783, 0.610820, 0.640000);
+    }
+    Color emission(const Object &obj, const Hitpoint &hp) const {
+        return Color(0.128783, 0.610820, 0.640000) * 2.0;
+    }
+    void calcNextRays(const Ray &ray, const Hitpoint &hp, const int depth, Random *rnd, std::vector<TraceInfo> &outvecs) {
+        bsdf->getNextRays(ray, hp, depth, rnd, outvecs);
+    }
+};
+
+//
+class JointGrayMaterial : public Material {
+public:
+    BSDF *bsdf;
+    
+    JointGrayMaterial() : bsdf(0) {
+        bsdf = new DiffuseBSDF();
+    }
+    ~JointGrayMaterial() {
+        delete bsdf;
+    }
+    
+    Color albedo(const Object &obj, const Hitpoint &hp) const {
+        return Color(0.219066, 0.219066, 0.219066) * 0.7;
+    }
+    Color emission(const Object &obj, const Hitpoint &hp) const {
+        return Color(0.0, 0.0, 0.0);
+    }
+    void calcNextRays(const Ray &ray, const Hitpoint &hp, const int depth, Random *rnd, std::vector<TraceInfo> &outvecs) {
+        bsdf->getNextRays(ray, hp, depth, rnd, outvecs);
+    }
+};
+
+/////
+class FloorMaterial : public Material {
+public:
+    BSDF *diffuseBsdf;
+    BSDF *specularBsdf;
+    VoronoiTexture *voronoi;
+    
+    FloorMaterial(): diffuseBsdf(0), specularBsdf(0), voronoi(0) {
+        diffuseBsdf = new DiffuseBSDF();
+        specularBsdf = new SpecularBSDF();
+        voronoi = new VoronoiTexture(0.9, time(NULL));
+        voronoi->setTransform(Mat4::makeScale(0.5, 0.5, 0.5));
+    }
+    ~FloorMaterial() {
+        delete diffuseBsdf;
+        delete specularBsdf;
+        delete voronoi;
+    }
+    
+    Color albedo(const Object &obj, const Hitpoint &hp) const {
+        Color voro = voronoi->sample(hp.position_);
+        return Color::lerp(Color(0.26, 0.3, 0.28), Color(0.68, 0.7, 0.65), pow(voro.r, 4.0));
+        //return Color(0.1, 0.3, 0.0);
+    }
+    Color emission(const Object &obj, const Hitpoint &hp) const {
+        Color voro = voronoi->sample(hp.position_);
+        return Color(0.0, 0.0, 0.0);
+    }
+    void calcNextRays(const Ray &ray, const Hitpoint &hp, const int depth, Random *rnd, std::vector<TraceInfo> &outvecs) {
+        Color voro = voronoi->sample(hp.position_);
+        if(voro.r > 0.5) {
+            diffuseBsdf->getNextRays(ray, hp, depth, rnd, outvecs);
+        } else {
+            specularBsdf->getNextRays(ray, hp, depth, rnd, outvecs);
+        }
+    }
+};
+
+class WallMaterial : public Material {
+public:
+    BSDF *bsdf;
+    FractalNoiseTexture *fnoise;
+    
+    WallMaterial(): bsdf(0), fnoise(0) {
+        bsdf = new DiffuseBSDF();
+        fnoise = new FractalNoiseTexture(FractalNoiseTexture::CellNoise, 6, 10);
+        //fnoise->setTransform(Mat4::makeScale(4.0, 4.0, 4.0));
+    }
+    ~WallMaterial() {
+        delete bsdf;
+        delete fnoise;
+    }
+    
+    Color albedo(const Object &obj, const Hitpoint &hp) const {
+        Color noise = fnoise->sample(hp.position_);
+        return noise.r * Vec(0.55, 0.55, 0.4);
+    }
+    Color emission(const Object &obj, const Hitpoint &hp) const {
+        //Color noise = fnoise->sample(hp.position_);
+        return Vec(0.0);
+    }
+    void calcNextRays(const Ray &ray, const Hitpoint &hp, const int depth, Random *rnd, std::vector<TraceInfo> &outvecs) {
+        bsdf->getNextRays(ray, hp, depth, rnd, outvecs);
+    }
+};
+
+
+/////
+class MainModelLoader : public WavefrontObj {
+
 public:
     Mesh *mesh;
+    std::map<std::string, int>materialMap;
+    int matId;
     
     MainModelLoader(const char *filepath) : WavefrontObj(filepath), mesh(0) {
         mesh = new Mesh(1000, 1000);
         mesh->newAttributeContainer();
         mesh->addVertexWithAttrs(Vec(0.0), Vec(0.0), Vec(0.0), 0);
+        matId = 0;
     }
     ~MainModelLoader() {
         mesh->release();
@@ -100,18 +205,10 @@ public:
     void foundVector(const ParameterType pt, const double x, const double y, const double z) {
         switch(pt) {
             case OBJ_v:
-                //mesh->addVertex(Vec(x, y, z));
                 mesh->addVertexWithAttrs(Vec(x, y, z), Vec(0.0), Vec(x, y, z), 0);
-                //std::cout << "v " << x << "," << y << "," << z << std::endl;
                 break;
             case OBJ_vn:
-                //mesh->addNormal(Vec(x, y, z));
-                //std::cout << "n " << x << "," << y << "," << z << std::endl;
-                break;
             case OBJ_vt:
-                //mesh->addVertexWithAttrs(Vec(x, y, z), 0);
-                //std::cout << "t " << x << "," << y << "," << z << std::endl;
-                break;
             case MTL_Ns:
             case MTL_Ka:
             case MTL_Kd:
@@ -126,10 +223,13 @@ public:
     // mtllib, o, s, usemtl, newmtl, MTL_map_Kd
     void foundString(const ParameterType pt, const std::string &str) {
         switch(pt) {
+            case OBJ_usemtl:
+                matId = (materialMap.empty())? 0 : materialMap[str];
+                //std::cout << "select " << str << ": " << ((materialMap[str])? "found":"not defined") << std::endl;
+                break;
             case OBJ_o:
             case OBJ_g:
             case OBJ_s:
-            case OBJ_usemtl:
             case OBJ_mtllib:
             case MTL_newmtl:
             case MTL_map_Kd:
@@ -147,12 +247,12 @@ public:
     void foundFace(const ParameterType pt, const std::vector<FaceInfo> &fids) {
         
         // first triangle
-        mesh->addFace(fids[0].v, fids[1].v, fids[2].v, 0);
+        mesh->addFace(fids[0].v, fids[1].v, fids[2].v, matId);
         //std::cout << "f " << fids[0].v << "," << fids[1].v << "," << fids[2].v << std::endl;
         
         if(fids.size() > 3) {
             // quad
-            mesh->addFace(fids[2].v, fids[3].v, fids[0].v, 0);
+            mesh->addFace(fids[2].v, fids[3].v, fids[0].v, matId);
             //std::cout << "f " << fids[2].v << "," << fids[3].v << "," << fids[0].v << std::endl;
         }
     }
@@ -175,116 +275,89 @@ using namespace r1h;
 // bg
 struct GradientBg : public BackgroundMaterial {
     Color backgroundColor(const Ray &ray) {
-        Vec upv = Vec::normalized(Vec(1.0, 1.0, 0.0));
+        Vec upv = Vec::normalized(Vec(0.0, 2.0, -0.5));
         Color sun = Color(10.0) * pow(fabs(Vec::dot(ray.dir_, upv)), 8.0);
-        Color grad = Color::lerp(Color(0.2, 0.5, 0.8), Color(0.4, 0.2, 0.1), fabs(ray.dir_.y));
-        return (sun + grad * 0.5);
+        Color grad = Color::lerp(Color(1.0, 0.5, 0.6), Color(0.6, 2.0, 2.0), fabs(ray.dir_.y));
+        return (sun + grad * 0.0);
     }
 };
 
 //
-static void setupCubes(Scene &scene) {
-    // objects
-    const int objNum = 8;
-    const int noiseseed = time(NULL);
+static void setupRobot(Scene &scene) {
+    Object *obj;
     
-    Random rnd(time(NULL));
+    //----- robo
+    MainModelLoader sceneloader("mainscene.obj");
+    sceneloader.setBasePath("../bin/model");
     
-    for(int iobj = 0; iobj < objNum; iobj++) {
-        Object *obj;
+    Material *tmpmat;
+    // materials
+    tmpmat = new AccentGrayMaterial();
+    sceneloader.materialMap[std::string("AccentGray")] = sceneloader.mesh->addMaterial(tmpmat);
+    tmpmat->release();
+    
+    tmpmat = new BodyWhiteMaterial();
+    sceneloader.materialMap[std::string("BodyWhite")] = sceneloader.mesh->addMaterial(tmpmat);
+    tmpmat->release();
+    
+    tmpmat = new EyeColorMaterial();
+    sceneloader.materialMap[std::string("EyeColor")] = sceneloader.mesh->addMaterial(tmpmat);
+    tmpmat->release();
+    
+    tmpmat = new JointGrayMaterial();
+    sceneloader.materialMap[std::string("JointGray")] = sceneloader.mesh->addMaterial(tmpmat);
+    tmpmat->release();
+    
+    //
+    sceneloader.load();
+    
+    // finish
+    sceneloader.mesh->calcSmoothNormals();
+    sceneloader.mesh->buildBVH();
+    
+    // create object
+    obj = new Object(sceneloader.mesh);
+    scene.addObject(obj);
+}
+
+static void setupBGObjs(Scene &scene) {
+    Object *obj;
+    
+    const char *objfiles[] = { "mainfloor.obj", "mainfront.obj", "mainright.obj", "mainleft.obj" };
+    
+    
+    for(int i = 0; i < 4; i++) {
+        MainModelLoader sceneloader(objfiles[i]);
+        sceneloader.setBasePath("../bin/model");
+        sceneloader.load();
         
-        //----- cube
-        MainModelLoader cubeloader("divcube.obj");
-        cubeloader.setBasePath("../bin/model");
-        cubeloader.load();
-        
-        // some mesh operation?
-        Mesh *mesh = cubeloader.mesh;
-        
-        mesh->calcSmoothNormals();
-        FractalNoiseTexture *displace = new FractalNoiseTexture(FractalNoiseTexture::SmoothNoise, 6, noiseseed + iobj);
-        displace->setTransform(Mat4::makeScale(2.0, 2.0, 2.0));
-        
-        Vec rotaxis = Vec::normalized(Vec(1.0));
-        //Mat4 trns = Mat4::makeRotation(1.0, rotaxis.x_, rotaxis.y_, rotaxis.z_);
-        Mat4 trns = Mat4::makeRotation(((iobj + 0.5) / objNum) * -3.14159, 0.0, 1.0, 0.0);
-        trns.translate(4.0 + rnd.next01() * 4.0, 0.0, 0.0);
-        trns.rotate(rnd.next01(), rotaxis);
-        
-        for(int i = 0; i < (int)mesh->vertices.size(); i++) {
-            Vec &v  = mesh->vertices[i];
-            Vec &vn = mesh->normals[i];
-            Vec &vt = mesh->attributes[0][i];
-            Color noise = displace->sample(v);
-            double d = noise.r;
-            
-            v += vn * (d * 0.75);
-            v = Mat4::transformV3(trns, v);
-            
-            vt.x_ = d;
+        Material *mat;
+        if(i == 0) {
+            mat = new FloorMaterial();
+        } else {
+            mat = new WallMaterial();
         }
-        delete displace;
-    
+        sceneloader.mesh->addMaterial(mat);
+        mat->release();
         
-        // finish
-        cubeloader.mesh->calcSmoothNormals();
-        cubeloader.mesh->buildBVH();
-        
-        MainCubeMaterial *cubemat = new MainCubeMaterial();
-        cubeloader.mesh->addMaterial(cubemat);
-        cubemat->release();
+        sceneloader.mesh->calcSmoothNormals();
+        sceneloader.mesh->buildBVH();
         
         // create object
-        obj = new Object(cubeloader.mesh);
+        obj = new Object(sceneloader.mesh);
         scene.addObject(obj);
     }
 }
 
-static void setupPlanes(Scene &scene) {
-    Object *obj;
-    
-    //----- plane
-    MainModelLoader planeloader("divplane.obj");
-    planeloader.setBasePath("../bin/model");
-    planeloader.load();
-    
-    MainPlaneMaterial *planemat = new MainPlaneMaterial();
-    planeloader.mesh->addMaterial(planemat);
-    planemat->release();
-    
-    // some mesh operation?
-    planeloader.mesh->calcSmoothNormals();
-    
-    Mesh *mesh = planeloader.mesh;
-    FractalNoiseTexture *displace = new FractalNoiseTexture(FractalNoiseTexture::SmoothNoise, 6);
-    
-    for(int i = 0; i < (int)mesh->vertices.size(); i++) {
-        Vec &v  = mesh->vertices[i];
-        Vec &vn = mesh->normals[i];
-        Vec &vt = mesh->attributes[0][i];
-        Color noise = displace->sample(v);
-        double d = fabs(noise.r);
-        double rr = v.x_ * v.x_ + v.z_ * v.z_;
-        
-        v += vn * (d * 10.0 * (1.0 - exp(-rr * 0.03)));
-        vt.x_ = d;
-    }
-    delete displace;
-    
-    
-    // finish
-    planeloader.mesh->calcSmoothNormals();
-    planeloader.mesh->buildBVH();
-    
-    // create object
-    obj = new Object(planeloader.mesh);
-    scene.addObject(obj);
-}
-
+//
 void r1h::setupMainScene(Scene &scene) {
     
-    setupCubes(scene);
-    setupPlanes(scene);
+    // objs
+    setupRobot(scene);
+    setupBGObjs(scene);
+    //setupCubes(scene);
+    //setupPlanes(scene);
+    
     
     //----- background
     GradientBg *bgmat = new GradientBg();
@@ -292,11 +365,12 @@ void r1h::setupMainScene(Scene &scene) {
     bgmat->release();
     
     //----- camera
+    // z-up(x,y,z)=y-up(x,z,-y)
     scene.setCamera(RCO::rc0<Camera>(new Camera()));
     scene.camera->setLookat(
-        Vec(0.0, 0.0, -8.0),
-        Vec(0.0, 0.0, 0.0),
+        Vec(17.98972, 13.00431, -44.434),
+        Vec(0.0, 5.95464, 0.0),
         Vec(0.0, 1.0, 0.0)
     );
-    scene.camera->setFocal(35.0, 32.0);
+    scene.camera->setFocal(65.0, 32.0);
 }

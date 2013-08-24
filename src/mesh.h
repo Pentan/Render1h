@@ -157,6 +157,8 @@ struct Mesh : public Geometry {
     void calcSmoothNormals();
     void buildBVH();
     
+    AABB getAABB() const { return bvhRoot->aabb; }
+    
     bool triangleIntersect(const int faceid, const Ray &ray, TriangleHitInfo *hitinfo) const;
     bool intersect(const Ray &ray, Hitpoint *hitpoint) const;
     
