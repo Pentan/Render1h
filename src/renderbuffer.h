@@ -6,7 +6,8 @@
 
 namespace r1h {
 
-class RenderBuffer {
+class RenderBuffer
+{
     Color *buffer;
     int width;
     int height;
